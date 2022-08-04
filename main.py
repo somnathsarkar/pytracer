@@ -31,7 +31,6 @@ This script creates a pygame window and displays the test scene.
 '''
 
 import pygame
-import numpy as np
 import time
 
 from pygame.locals import (
@@ -41,7 +40,7 @@ from pygame.locals import (
 )
 
 from scene import TEST_SCENE
-from tracer import raygen_shader
+from tracer import PathTracer
 
 
 def entry_point():
@@ -51,18 +50,15 @@ def entry_point():
   screen_height = 100
   screen = pygame.display.set_mode((screen_width, screen_height))
 
+  # Initialize Path Tracer
+  path_tracer = PathTracer(screen_width, screen_height, TEST_SCENE, 1, 1)
+
   # Variable to keep the main loop running
   running = True
 
-  # Write frame buffer
-  def get_frame() -> np.array:
-    arr = raygen_shader(screen_width, screen_height, TEST_SCENE) * 255.0
-    return arr
-
   # Initialize performance counter
-  perf_update_interval = 1
-  perf_time = time.perf_counter()
-  frames = 0
+  start_time = time.perf_counter()
+  last_time = start_time
 
   # Main loop
   while running:
@@ -74,19 +70,23 @@ def entry_point():
       elif event.type == QUIT:
         running = False
 
-    # Blit frame buffer to screen and present
-    pygame.surfarray.blit_array(screen, get_frame())
-    pygame.display.update()
+    # Update Path Tracer
+    if path_tracer.current_iteration < path_tracer.num_iterations:
+      # If iterations aren't complete, run the next iteration
+      path_tracer.next_iteration()
+      # Update performance counter
+      curr = path_tracer.current_iteration
+      last_time = time.perf_counter()
+      pygame.display.set_caption(f"Iterations: {curr}, \
+            Iteration Time: {(last_time-start_time)/curr:.5f} sec, \
+            It/sec: {curr/(last_time-start_time):.5f}")
 
-    # Update performance counter
-    frames += 1
-    new_perf_time = time.perf_counter()
-    delta_time = new_perf_time - perf_time
-    perf_time = new_perf_time
-    if (frames % perf_update_interval) == 0:
-      pygame.display.set_caption(
-          f"Frames: {frames}, Frame Time: {delta_time:.5f} secs, \
-          FPS: {1.0 / delta_time:.5f}")
+    # Get buffer and format for presentation
+    buffer = path_tracer.buffer * 255.0
+
+    # Blit frame buffer to screen and present
+    pygame.surfarray.blit_array(screen, buffer)
+    pygame.display.update()
 
 
 if __name__ == "__main__":
