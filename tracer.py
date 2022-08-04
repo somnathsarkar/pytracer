@@ -23,20 +23,21 @@
 '''
 
 from dataclasses import dataclass
-from typing import List, Tuple, Optional
+import multiprocessing
+from typing import Tuple, Optional
 import numpy as np
 import numpy.typing as npt
 from camera import view_to_projection_matrix
 from scene import TEST_SCENE, Triangle, Ray, Scene
 from vector import vec3_to_direction, vec3_to_position, position_to_vec3
-from vector_types import Vec2
+from vector_types import Vec2, Vec3
 
 EPSILON = 1e-3
 
 
 @dataclass
 class Payload:
-  color: np.ndarray
+  color: Vec3
 
 
 class PathTracer(object):
@@ -116,7 +117,7 @@ class PathTracer(object):
           payload.color = np.array([0.0, 1.0, 0.0])
     return payload
 
-  def _ray_worker(self, screen_pos_list: List[Vec2]) -> None:
+  def _ray_worker(self, screen_pos: Vec2) -> Vec3:
     screen_size = np.array((self.screen_width, self.screen_height))
     # Calculate screen pos to world pos matrix
     # World to Screen = Proj * View * world_pos
@@ -127,16 +128,16 @@ class PathTracer(object):
     proj_to_world_matrix = view_to_world_matrix @ proj_to_view_matrix
     camera_world_pos = position_to_vec3(
         view_to_world_matrix @ np.array([0.0, 0.0, 0.0, 1.0]))
-    for screen_x, screen_y in screen_pos_list:
-      screen_pixel = np.array((screen_x, screen_y), dtype=np.float32)
-      screen_pos_2d = 2.0 * (screen_pixel / screen_size) - 1.0
-      screen_pos = np.array([screen_pos_2d[0], screen_pos_2d[1], 0.0, 1.0])
-      world_ray_origin = position_to_vec3(proj_to_world_matrix @ screen_pos)
-      world_ray_direction = PathTracer._unsafe_normalize(world_ray_origin -
-                                                         camera_world_pos)
-      ray: Ray = Ray(world_ray_origin, world_ray_direction)
-      payload: Payload = self._trace_ray(ray)
-      self.buffer[screen_x][screen_y] = payload.color
+    screen_x, screen_y = screen_pos
+    screen_pixel = np.array((screen_x, screen_y), dtype=np.float32)
+    screen_pos_2d = 2.0 * (screen_pixel / screen_size) - 1.0
+    screen_pos = np.array([screen_pos_2d[0], screen_pos_2d[1], 0.0, 1.0])
+    world_ray_origin = position_to_vec3(proj_to_world_matrix @ screen_pos)
+    world_ray_direction = PathTracer._unsafe_normalize(world_ray_origin -
+                                                       camera_world_pos)
+    ray: Ray = Ray(world_ray_origin, world_ray_direction)
+    payload: Payload = self._trace_ray(ray)
+    return payload.color
 
   @staticmethod
   def _unsafe_normalize(
@@ -146,8 +147,10 @@ class PathTracer(object):
 
   def next_iteration(self):
     assert self.current_iteration < self.num_iterations
-    self._ray_worker(
-        self.screen_positions[self.current_iteration *
-                              self.batch_size:(self.current_iteration + 1) *
-                              self.batch_size])
+    batch_start = self.current_iteration * self.batch_size
+    batch_end = batch_start + self.batch_size
+    batch = self.screen_positions[batch_start:batch_end]
+    pool = multiprocessing.Pool(processes=self.num_processes)
+    payload_colors = pool.map(self._ray_worker, batch)
+    self.buffer[batch[:, 0], batch[:, 1]] = payload_colors
     self.current_iteration += 1

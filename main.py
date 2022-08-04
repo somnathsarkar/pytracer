@@ -29,15 +29,7 @@ This script creates a pygame window and displays the test scene.
   conda activate pytracer-env
   python main.py
 '''
-
-import pygame
 import time
-
-from pygame.locals import (
-    K_ESCAPE,
-    KEYDOWN,
-    QUIT,
-)
 
 from scene import TEST_SCENE
 from tracer import PathTracer
@@ -45,13 +37,20 @@ from tracer import PathTracer
 
 def entry_point():
   # Initialize pygame and create screen
+  # pygame performs setup on import, we want to avoid this for multiple processes
+  import pygame
+  from pygame.locals import (
+      K_ESCAPE,
+      KEYDOWN,
+      QUIT,
+  )
   pygame.init()
   screen_width = 640
   screen_height = 480
   screen = pygame.display.set_mode((screen_width, screen_height))
 
   # Initialize Path Tracer
-  path_tracer = PathTracer(screen_width, screen_height, TEST_SCENE, 1, 100)
+  path_tracer = PathTracer(screen_width, screen_height, TEST_SCENE, 8, 40)
 
   # Variable to keep the main loop running
   running = True
@@ -76,12 +75,13 @@ def entry_point():
       path_tracer.next_iteration()
       # Update performance counter
       curr = path_tracer.current_iteration
+      tot = path_tracer.num_iterations
       last_time = time.perf_counter()
       pygame.display.set_caption(
           f"Iterations: {curr},"
           f"Iteration Time: {(last_time-start_time)/curr:.2f}s,"
           f"It/sec: {curr/(last_time-start_time):.2f},"
-          f"Remaining: {(last_time-start_time)*(path_tracer.num_iterations-curr)/curr:.2f}s,"
+          f"Remaining: {(last_time-start_time)*(tot-curr)/curr:.2f}s,"
           f"Elapsed: {(last_time-start_time):.2f}s")
 
     # Get buffer and format for presentation
