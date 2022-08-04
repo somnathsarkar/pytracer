@@ -23,12 +23,13 @@
 '''
 
 from dataclasses import dataclass
-from typing import Tuple, Optional
+from typing import List, Tuple, Optional
 import numpy as np
 import numpy.typing as npt
 from camera import view_to_projection_matrix
 from scene import TEST_SCENE, Triangle, Ray, Scene
 from vector import vec3_to_direction, vec3_to_position, position_to_vec3
+from vector_types import Vec2
 
 EPSILON = 1e-3
 
@@ -65,6 +66,13 @@ class PathTracer(object):
     self.num_iterations = num_iterations
     self.current_iteration = 0
     self.buffer = np.zeros((screen_width, screen_height, 3), dtype=np.float32)
+    self.batch_size = max(
+        (self.screen_width * self.screen_height) // num_iterations, 1)
+
+    # Setup work
+    self.screen_positions = np.dstack(
+        np.meshgrid(np.arange(screen_width),
+                    np.arange(screen_height))).reshape(-1, 2)
 
   @staticmethod
   def _ray_triangle_intersection(
@@ -108,14 +116,7 @@ class PathTracer(object):
           payload.color = np.array([0.0, 1.0, 0.0])
     return payload
 
-  @staticmethod
-  def _unsafe_normalize(
-      vec: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
-    mag: float = np.linalg.norm(vec)
-    return vec / mag
-
-  def next_iteration(self):
-    assert self.current_iteration < self.num_iterations
+  def _ray_worker(self, screen_pos_list: List[Vec2]) -> None:
     screen_size = np.array((self.screen_width, self.screen_height))
     # Calculate screen pos to world pos matrix
     # World to Screen = Proj * View * world_pos
@@ -126,15 +127,27 @@ class PathTracer(object):
     proj_to_world_matrix = view_to_world_matrix @ proj_to_view_matrix
     camera_world_pos = position_to_vec3(
         view_to_world_matrix @ np.array([0.0, 0.0, 0.0, 1.0]))
-    for row_i in range(self.screen_height):
-      for col_i in range(self.screen_width):
-        screen_pixel = np.array((col_i, row_i), dtype=np.float32)
-        screen_pos_2d = 2.0 * (screen_pixel / screen_size) - 1.0
-        screen_pos = np.array([screen_pos_2d[0], screen_pos_2d[1], 0.0, 1.0])
-        world_ray_origin = position_to_vec3(proj_to_world_matrix @ screen_pos)
-        world_ray_direction = PathTracer._unsafe_normalize(world_ray_origin -
-                                                           camera_world_pos)
-        ray: Ray = Ray(world_ray_origin, world_ray_direction)
-        payload: Payload = self._trace_ray(ray)
-        self.buffer[col_i][row_i] = payload.color
+    for screen_x, screen_y in screen_pos_list:
+      screen_pixel = np.array((screen_x, screen_y), dtype=np.float32)
+      screen_pos_2d = 2.0 * (screen_pixel / screen_size) - 1.0
+      screen_pos = np.array([screen_pos_2d[0], screen_pos_2d[1], 0.0, 1.0])
+      world_ray_origin = position_to_vec3(proj_to_world_matrix @ screen_pos)
+      world_ray_direction = PathTracer._unsafe_normalize(world_ray_origin -
+                                                         camera_world_pos)
+      ray: Ray = Ray(world_ray_origin, world_ray_direction)
+      payload: Payload = self._trace_ray(ray)
+      self.buffer[screen_x][screen_y] = payload.color
+
+  @staticmethod
+  def _unsafe_normalize(
+      vec: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
+    mag: float = np.linalg.norm(vec)
+    return vec / mag
+
+  def next_iteration(self):
+    assert self.current_iteration < self.num_iterations
+    self._ray_worker(
+        self.screen_positions[self.current_iteration *
+                              self.batch_size:(self.current_iteration + 1) *
+                              self.batch_size])
     self.current_iteration += 1

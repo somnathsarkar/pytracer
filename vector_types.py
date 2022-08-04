@@ -25,6 +25,7 @@
 import numpy as np
 import numpy.typing as npt
 
+Vec2 = npt.NDArray[np.float32]
 Vec3 = npt.NDArray[np.float32]
 Vec4 = npt.NDArray[np.float32]
 Mat3 = npt.NDArray[np.float32]

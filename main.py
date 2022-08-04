@@ -46,12 +46,12 @@ from tracer import PathTracer
 def entry_point():
   # Initialize pygame and create screen
   pygame.init()
-  screen_width = 120
-  screen_height = 100
+  screen_width = 640
+  screen_height = 480
   screen = pygame.display.set_mode((screen_width, screen_height))
 
   # Initialize Path Tracer
-  path_tracer = PathTracer(screen_width, screen_height, TEST_SCENE, 1, 1)
+  path_tracer = PathTracer(screen_width, screen_height, TEST_SCENE, 1, 100)
 
   # Variable to keep the main loop running
   running = True
@@ -77,9 +77,12 @@ def entry_point():
       # Update performance counter
       curr = path_tracer.current_iteration
       last_time = time.perf_counter()
-      pygame.display.set_caption(f"Iterations: {curr}, \
-            Iteration Time: {(last_time-start_time)/curr:.5f} sec, \
-            It/sec: {curr/(last_time-start_time):.5f}")
+      pygame.display.set_caption(
+          f"Iterations: {curr},"
+          f"Iteration Time: {(last_time-start_time)/curr:.2f}s,"
+          f"It/sec: {curr/(last_time-start_time):.2f},"
+          f"Remaining: {(last_time-start_time)*(path_tracer.num_iterations-curr)/curr:.2f}s,"
+          f"Elapsed: {(last_time-start_time):.2f}s")
 
     # Get buffer and format for presentation
     buffer = path_tracer.buffer * 255.0

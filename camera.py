@@ -37,7 +37,7 @@ class Camera:
 def view_to_projection_matrix(camera: Camera) -> npt.NDArray[np.float64]:
   near: float = 0.01
   far: float = 100.0
-  aspect_ratio: float = 120.0 / 100.0
+  aspect_ratio: float = 16.0 / 9.0
   hcot: float = 1.0 / math.tan(math.radians(camera.fovx / 2.0))
   mat: npt.NDArray[np.float64] = np.array(
       [[hcot, 0.0, 0.0, 0.0], [0.0, aspect_ratio * hcot, 0.0, 0.0],
