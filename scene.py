@@ -46,9 +46,15 @@ class Ray:
 
 
 @dataclass
+class Material:
+  albedo: np.ndarray
+
+
+@dataclass
 class Instance:
   transform: np.ndarray
   mesh: Mesh
+  material: Material
 
 
 @dataclass
@@ -66,7 +72,11 @@ PLANE = Mesh([
         np.array([0.0, 0.0, -1.0]))
 ])
 
+RED_MATERIAL = Material(np.array([1.0, 0.0, 0.0]))
+GREEN_MATERIAL = Material(np.array([0.0, 1.0, 0.0]))
+BLUE_MATERIAL = Material(np.array([0.0, 0.0, 1.0]))
+
 _camera_transform = np.diag([1.0, 1.0, 1.0, 1.0])
 _camera_transform[2, 3] = -1.0
-TEST_SCENE = Scene([Instance(np.eye(4), PLANE)], Camera(_camera_transform,
-                                                        100.0))
+TEST_SCENE = Scene([Instance(np.eye(4), PLANE, GREEN_MATERIAL)],
+                   Camera(_camera_transform, 100.0))

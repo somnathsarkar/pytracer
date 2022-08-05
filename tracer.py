@@ -114,7 +114,7 @@ class PathTracer(object):
         intersected, _ = PathTracer._ray_triangle_intersection(
             ray, transformed_tri)
         if intersected:
-          payload.color = np.array([0.0, 1.0, 0.0])
+          payload.color = instance.material.albedo
     return payload
 
   def _ray_worker(self, screen_pos: Vec2) -> Vec3:
