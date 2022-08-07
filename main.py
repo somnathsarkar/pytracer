@@ -31,13 +31,13 @@ This script creates a pygame window and displays the test scene.
 '''
 import time
 
-from scene import TEST_SCENE
+from scene import CORNELL_BOX
 from tracer import PathTracer
 
 
 def entry_point():
   # Initialize pygame and create screen
-  # pygame performs setup on import, we want to avoid this for multiple processes
+  # pygame performs setup on import, we avoid this for multiple processes
   import pygame
   from pygame.locals import (
       K_ESCAPE,
@@ -45,12 +45,12 @@ def entry_point():
       QUIT,
   )
   pygame.init()
-  screen_width = 640
-  screen_height = 480
+  screen_width = 300
+  screen_height = 300
   screen = pygame.display.set_mode((screen_width, screen_height))
 
   # Initialize Path Tracer
-  path_tracer = PathTracer(screen_width, screen_height, TEST_SCENE, 8, 40)
+  path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 75)
 
   # Variable to keep the main loop running
   running = True
