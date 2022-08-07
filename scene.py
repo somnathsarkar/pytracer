@@ -26,6 +26,7 @@ from dataclasses import dataclass
 import numpy as np
 from typing import List
 from camera import Camera
+import vector
 
 
 @dataclass
@@ -76,7 +77,6 @@ RED_MATERIAL = Material(np.array([1.0, 0.0, 0.0]))
 GREEN_MATERIAL = Material(np.array([0.0, 1.0, 0.0]))
 BLUE_MATERIAL = Material(np.array([0.0, 0.0, 1.0]))
 
-_camera_transform = np.diag([1.0, 1.0, 1.0, 1.0])
-_camera_transform[2, 3] = -1.0
+_camera_transform = vector.translate_mat(np.array([0, 0, -1]))
 TEST_SCENE = Scene([Instance(np.eye(4), PLANE, GREEN_MATERIAL)],
                    Camera(_camera_transform, 100.0))
