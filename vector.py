@@ -50,7 +50,7 @@ def translate_mat(vec: Vec3) -> Mat4:
 
 # Return rotation matrix about euler angles x,y,z degrees in vec
 def rotate_mat(vec: Vec3) -> Mat4:
-  x, y, z = np.radians(vec)
+  x, y, z = vec
   sin = np.sin
   cos = np.cos
   mat = np.zeros((4, 4))

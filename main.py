@@ -50,7 +50,8 @@ def entry_point():
   screen = pygame.display.set_mode((screen_width, screen_height))
 
   # Initialize Path Tracer
-  path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 75)
+  path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 75, 10,
+                           2)
 
   # Variable to keep the main loop running
   running = True

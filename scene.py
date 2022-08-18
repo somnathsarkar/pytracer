@@ -49,6 +49,7 @@ class Ray:
 @dataclass
 class Material:
   albedo: np.ndarray
+  emission: np.ndarray
 
 
 @dataclass
@@ -73,10 +74,12 @@ PLANE = Mesh([
         np.array([0.0, 0.0, -1.0]))
 ])
 
-RED_MATERIAL = Material(np.array([1.0, 0.0, 0.0]))
-GREEN_MATERIAL = Material(np.array([0.0, 1.0, 0.0]))
-BLUE_MATERIAL = Material(np.array([0.0, 0.0, 1.0]))
-WHITE_MATERIAL = Material(np.array([1.0, 1.0, 1.0]))
+RED_MATERIAL = Material(np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 0.0]))
+GREEN_MATERIAL = Material(np.array([0.0, 1.0, 0.0]), np.array([0.0, 0.0, 0.0]))
+BLUE_MATERIAL = Material(np.array([0.0, 0.0, 1.0]), np.array([0.0, 0.0, 0.0]))
+WHITE_MATERIAL = Material(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
+WHITE_EMISSIVE_MATERIAL = Material(
+    np.array([1.0, 1.0, 1.0]), np.array([1.0, 1.0, 1.0]))
 
 _camera_transform = vector.translate_mat(np.array([0, 0, -1]))
 TEST_SCENE = Scene([Instance(np.eye(4), PLANE, GREEN_MATERIAL)],
@@ -85,16 +88,16 @@ TEST_SCENE = Scene([Instance(np.eye(4), PLANE, GREEN_MATERIAL)],
 _back_transform = vector.translate_mat(np.array([0.0, 0.0, 1.0]))
 _back_wall = Instance(_back_transform, PLANE, WHITE_MATERIAL)
 _left_transform = vector.translate_mat(np.array(
-    [-1.0, 0.0, 0.0])) @ vector.rotate_mat(np.array([0.0, -90.0, 0.0]))
+    [-1.0, 0.0, 0.0])) @ vector.rotate_mat(np.radians([0.0, -90.0, 0.0]))
 _left_wall = Instance(_left_transform, PLANE, RED_MATERIAL)
 _right_transform = vector.translate_mat(np.array(
-    [1.0, 0.0, 0.0])) @ vector.rotate_mat(np.array([0.0, 90.0, 0.0]))
+    [1.0, 0.0, 0.0])) @ vector.rotate_mat(np.radians([0.0, 90.0, 0.0]))
 _right_wall = Instance(_right_transform, PLANE, GREEN_MATERIAL)
 _top_transform = vector.translate_mat(np.array(
-    [0.0, -1.0, 0.0])) @ vector.rotate_mat(np.array([-90.0, 0.0, 0.0]))
-_top_wall = Instance(_top_transform, PLANE, WHITE_MATERIAL)
+    [0.0, -1.0, 0.0])) @ vector.rotate_mat(np.radians([-90.0, 0.0, 0.0]))
+_top_wall = Instance(_top_transform, PLANE, WHITE_EMISSIVE_MATERIAL)
 _bottom_transform = vector.translate_mat(np.array(
-    [0.0, 1.0, 0.0])) @ vector.rotate_mat(np.array([90.0, 0.0, 0.0]))
+    [0.0, 1.0, 0.0])) @ vector.rotate_mat(np.radians([90.0, 0.0, 0.0]))
 _bottom_wall = Instance(_bottom_transform, PLANE, WHITE_MATERIAL)
 CORNELL_BOX = Scene([
     _back_wall,

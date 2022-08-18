@@ -29,8 +29,8 @@ import numpy as np
 import numpy.typing as npt
 from camera import view_to_projection_matrix
 from scene import TEST_SCENE, Triangle, Ray, Scene
-from vector import vec3_to_direction, vec3_to_position, position_to_vec3
-from vector_types import Vec2, Vec3
+from vector import rotate_mat, vec3_to_direction, vec3_to_position, position_to_vec3
+from vector_types import Vec2, Vec3, Mat4
 
 EPSILON = 1e-3
 
@@ -59,12 +59,16 @@ class PathTracer(object):
                screen_height: int,
                scene: Scene = TEST_SCENE,
                num_processes: int = 1,
-               num_iterations: int = 1):
+               num_iterations: int = 1,
+               num_samples: int = 1,
+               max_depth: int = 2):
     self.screen_width = screen_width
     self.screen_height = screen_height
     self.scene = scene
     self.num_processes = num_processes
     self.num_iterations = num_iterations
+    self.num_samples = num_samples
+    self.max_depth = max_depth
     self.current_iteration = 0
     self.buffer = np.zeros((screen_width, screen_height, 3), dtype=np.float32)
     self.batch_size = max(
@@ -91,14 +95,31 @@ class PathTracer(object):
     x = np.linalg.solve(solve_a, solve_b)
     if singular_error or np.any(x < -EPSILON) or np.any(
         x[1:] > 1 + EPSILON) or (1 - x[1] - x[2]) < -EPSILON or (
-            1 - x[1] - x[2]) > 1 + EPSILON:
+            1 - x[1] - x[2]) > 1 + EPSILON or x[0] < EPSILON:
       return (False, None)
     return (True, x)
 
-  def _trace_ray(self, ray: Ray) -> Payload:
+  @staticmethod
+  def _get_basis_transform(normal: Vec3) -> Mat4:
+    random_cross = PathTracer._unsafe_normalize(np.random.rand(3))
+    tangent = np.cross(random_cross, normal)
+    bitangent = np.cross(tangent, normal)
+    w = np.array([0.0, 0.0, 0.0])
+    mat = np.vstack([
+        vec3_to_direction(basis_vector)
+        for basis_vector in (normal, tangent, bitangent, w)
+    ])
+    mat[3, 3] = 1.0
+    return mat
+
+  def _trace_ray(self, ray: Ray, depth: int, ignore_instance: int,
+                 ignore_tri: int) -> Payload:
     payload = Payload(np.array([0.0, 0.0, 0.0]))
-    for instance in self.scene.instances:
-      for tri in instance.mesh.tris:
+    found_hit = False
+    for instance_i, instance in enumerate(self.scene.instances):
+      for tri_i, tri in enumerate(instance.mesh.tris):
+        if ignore_instance == instance_i and tri_i == ignore_tri:
+          continue
         # Convert triangle vertices into 4x3 matrix with position vector columns
         tri_verts = np.hstack([
             vec3_to_position(tri.vertices[i]).reshape(-1, 1) for i in range(3)
@@ -109,12 +130,38 @@ class PathTracer(object):
             for i in range(3)
         ])
         tri_normal = vec3_to_direction(tri.normal)
-        transformed_normal = instance.transform @ tri_normal
+        transformed_normal = (instance.transform @ tri_normal)[:3]
         transformed_tri = Triangle(transformed_vertices, transformed_normal)
-        intersected, _ = PathTracer._ray_triangle_intersection(
+        intersected, intersect_params = PathTracer._ray_triangle_intersection(
             ray, transformed_tri)
         if intersected:
-          payload.color = instance.material.albedo
+          intersect_albedo = instance.material.albedo
+          payload.color = instance.material.emission
+          intersect_t = intersect_params[0]
+          if depth > 0:
+            sample_origin = ray.position + intersect_t * ray.direction
+            inv_intersect_basis = PathTracer._get_basis_transform(
+                transformed_normal).T
+            for _ in range(self.num_samples):
+              azimuth = np.random.rand() * np.pi - np.pi / 2.0
+              inclination = np.arcsin(np.random.rand() * 2.0 - 1.0)
+              random_ray_transform = rotate_mat(
+                  np.array([0.0, inclination, azimuth]))
+              sample_ray_direction = inv_intersect_basis @ random_ray_transform @ np.array(
+                  [1.0, 0.0, 0.0, 0.0])
+              sample_ray_direction = sample_ray_direction[:3]
+              sample_ray = Ray(sample_origin, sample_ray_direction)
+              sample_payload = self._trace_ray(sample_ray, depth - 1,
+                                               instance_i, tri_i)
+              payload.color = (payload.color) + (4 * sample_payload.color *
+                                                 intersect_albedo /
+                                                 self.num_samples)
+          falloff = max(intersect_t * intersect_t, 1.0)
+          payload.color = payload.color / falloff
+          found_hit = True
+          break
+      if found_hit:
+        break
     return payload
 
   def _ray_worker(self, screen_pos: Vec2) -> Vec3:
@@ -136,7 +183,7 @@ class PathTracer(object):
     world_ray_direction = PathTracer._unsafe_normalize(world_ray_origin -
                                                        camera_world_pos)
     ray: Ray = Ray(world_ray_origin, world_ray_direction)
-    payload: Payload = self._trace_ray(ray)
+    payload: Payload = self._trace_ray(ray, self.max_depth, -1, -1)
     return payload.color
 
   @staticmethod
@@ -152,5 +199,5 @@ class PathTracer(object):
     batch = self.screen_positions[batch_start:batch_end]
     pool = multiprocessing.Pool(processes=self.num_processes)
     payload_colors = pool.map(self._ray_worker, batch)
-    self.buffer[batch[:, 0], batch[:, 1]] = payload_colors
+    self.buffer[batch[:, 0], batch[:, 1]] = np.minimum(payload_colors, 1.0)
     self.current_iteration += 1
