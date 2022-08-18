@@ -45,8 +45,8 @@ def entry_point():
       QUIT,
   )
   pygame.init()
-  screen_width = 300
-  screen_height = 300
+  screen_width = 120
+  screen_height = 100
   screen = pygame.display.set_mode((screen_width, screen_height))
 
   # Initialize Path Tracer
@@ -86,7 +86,7 @@ def entry_point():
           f"Elapsed: {(last_time-start_time):.2f}s")
 
     # Get buffer and format for presentation
-    buffer = path_tracer.buffer * 255.0
+    buffer = path_tracer.denoise_buffer * 255.0
 
     # Blit frame buffer to screen and present
     pygame.surfarray.blit_array(screen, buffer)

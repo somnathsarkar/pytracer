@@ -31,6 +31,7 @@ from camera import view_to_projection_matrix
 from scene import TEST_SCENE, Triangle, Ray, Scene
 from vector import rotate_mat, vec3_to_direction, vec3_to_position, position_to_vec3
 from vector_types import Vec2, Vec3, Mat4
+from denoise import Denoiser
 
 EPSILON = 1e-3
 
@@ -61,7 +62,8 @@ class PathTracer(object):
                num_processes: int = 1,
                num_iterations: int = 1,
                num_samples: int = 1,
-               max_depth: int = 2):
+               max_depth: int = 2,
+               denoiser: Denoiser = Denoiser()):
     self.screen_width = screen_width
     self.screen_height = screen_height
     self.scene = scene
@@ -71,8 +73,11 @@ class PathTracer(object):
     self.max_depth = max_depth
     self.current_iteration = 0
     self.buffer = np.zeros((screen_width, screen_height, 3), dtype=np.float32)
+    self.denoise_buffer = np.zeros((screen_width, screen_height, 3),
+                                   dtype=np.float32)
     self.batch_size = max(
         (self.screen_width * self.screen_height) // num_iterations, 1)
+    self.denoiser = denoiser
 
     # Setup work
     self.screen_positions = np.dstack(
@@ -147,8 +152,8 @@ class PathTracer(object):
               inclination = np.arcsin(np.random.rand() * 2.0 - 1.0)
               random_ray_transform = rotate_mat(
                   np.array([0.0, inclination, azimuth]))
-              sample_ray_direction = inv_intersect_basis @ random_ray_transform @ np.array(
-                  [1.0, 0.0, 0.0, 0.0])
+              sample_ray_direction = inv_intersect_basis \
+                  @ random_ray_transform @ np.array([1.0, 0.0, 0.0, 0.0])
               sample_ray_direction = sample_ray_direction[:3]
               sample_ray = Ray(sample_origin, sample_ray_direction)
               sample_payload = self._trace_ray(sample_ray, depth - 1,
@@ -200,4 +205,5 @@ class PathTracer(object):
     pool = multiprocessing.Pool(processes=self.num_processes)
     payload_colors = pool.map(self._ray_worker, batch)
     self.buffer[batch[:, 0], batch[:, 1]] = np.minimum(payload_colors, 1.0)
+    self.denoise_buffer = self.denoiser.denoise(self.buffer)
     self.current_iteration += 1
