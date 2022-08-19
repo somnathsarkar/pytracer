@@ -33,6 +33,7 @@ import time
 
 from scene import CORNELL_BOX
 from tracer import PathTracer
+from denoise import GaussianFilter
 
 
 def entry_point():
@@ -51,7 +52,7 @@ def entry_point():
 
   # Initialize Path Tracer
   path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 75, 10,
-                           2)
+                           2, GaussianFilter())
 
   # Variable to keep the main loop running
   running = True

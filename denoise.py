@@ -22,6 +22,7 @@
 """Collection of denoisers for path tracer output"""
 import numpy as np
 import numpy.typing as npt
+import scipy.stats
 
 
 class Denoiser(object):
@@ -33,3 +34,27 @@ class Denoiser(object):
 
   def denoise(self, buffer: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
     return buffer
+
+
+class GaussianFilter(Denoiser):
+  """Run a gaussian kernel over input buffer"""
+
+  def __init__(self, kernel_size: int = 3):
+    super().__init__()
+    self.kernel_size = int(kernel_size)
+    assert self.kernel_size > 0 and self.kernel_size % 2 == 1
+
+  def denoise(self, buffer: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
+    gaussian_1d = scipy.stats.norm.pdf(
+        np.arange(-self.kernel_size // 2 + 1, self.kernel_size // 2 + 1))
+    gaussian_1d = gaussian_1d / gaussian_1d.sum()
+    denoise_buffer = np.zeros_like(buffer)
+    for color_i in range(3):
+      for i in range(buffer.shape[0]):
+        denoise_buffer[i, :, color_i] = np.convolve(buffer[i, :, color_i],
+                                                    gaussian_1d, 'same')
+      for j in range(buffer.shape[1]):
+        denoise_buffer[:, j,
+                       color_i] = np.convolve(denoise_buffer[:, j, color_i],
+                                              gaussian_1d, 'same')
+    return denoise_buffer
