@@ -25,8 +25,8 @@
 from dataclasses import dataclass
 import numpy as np
 from typing import List
-from camera import Camera
-import vector
+from .camera import Camera
+from . import vector
 
 
 @dataclass

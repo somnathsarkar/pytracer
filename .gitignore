@@ -2,4 +2,5 @@
 *.pyc
 *.npy
 *.ipynb
-tmp/**
+examples/**/tmp/**
+pytracer.egg-info/**

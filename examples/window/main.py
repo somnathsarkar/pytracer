@@ -27,14 +27,16 @@ This script creates a pygame window and displays the test scene.
 
   conda env create -f environment.yml
   conda activate pytracer-env
+  pip install .
+  cd examples/window
   python main.py
 '''
 import time
 import os
 import pickle as pkl
 
-from scene import CORNELL_BOX
-from tracer import PathTracer
+from pytracer.scene import CORNELL_BOX
+from pytracer.tracer import PathTracer
 
 
 def entry_point():

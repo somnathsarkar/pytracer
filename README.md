@@ -9,6 +9,8 @@ You can use `conda` to setup the environment using the included `environment.yml
 ```
 conda env create -f environment.yml
 conda activate pytracer-env
+pip install .
+cd examples/window
 python main.py
 ```
 

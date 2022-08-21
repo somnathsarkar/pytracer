@@ -28,11 +28,11 @@ from typing import Tuple, Optional
 import pickle as pkl
 import numpy as np
 import numpy.typing as npt
-from camera import view_to_projection_matrix
-from scene import TEST_SCENE, Triangle, Ray, Scene
-from vector import rotate_mat, vec3_to_direction, vec3_to_position, position_to_vec3
-from vector_types import Vec2, Vec3, Mat4
-from denoise import Denoiser
+from .camera import view_to_projection_matrix
+from .scene import TEST_SCENE, Triangle, Ray, Scene
+from .vector import rotate_mat, vec3_to_direction, vec3_to_position, position_to_vec3
+from .vector_types import Vec2, Vec3, Mat4
+from .denoise import Denoiser
 
 EPSILON = 1e-3
 

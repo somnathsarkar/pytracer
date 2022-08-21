@@ -23,7 +23,7 @@
 '''
 
 import numpy as np
-from vector_types import Vec3, Vec4, Mat4
+from .vector_types import Vec3, Vec4, Mat4
 
 
 # For a single vec3 (x,y,z) return (x,y,z,0)
