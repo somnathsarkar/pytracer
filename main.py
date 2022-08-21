@@ -30,10 +30,11 @@ This script creates a pygame window and displays the test scene.
   python main.py
 '''
 import time
+import os
+import pickle as pkl
 
 from scene import CORNELL_BOX
 from tracer import PathTracer
-from denoise import GaussianFilter
 
 
 def entry_point():
@@ -46,13 +47,18 @@ def entry_point():
       QUIT,
   )
   pygame.init()
-  screen_width = 120
-  screen_height = 100
+  screen_width = 300
+  screen_height = 300
   screen = pygame.display.set_mode((screen_width, screen_height))
 
   # Initialize Path Tracer
-  path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 75, 10,
-                           2, GaussianFilter())
+  tracer_path = 'tmp/tracer.pkl'
+  if os.path.exists(tracer_path):
+    with open(tracer_path, 'rb') as f:
+      path_tracer = pkl.load(f)
+  else:
+    path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 100,
+                             1, 1)
 
   # Variable to keep the main loop running
   running = True
@@ -85,6 +91,8 @@ def entry_point():
           f"It/sec: {curr/(last_time-start_time):.2f},"
           f"Remaining: {(last_time-start_time)*(tot-curr)/curr:.2f}s,"
           f"Elapsed: {(last_time-start_time):.2f}s")
+      # Save tracer state
+      path_tracer.save_state(tracer_path)
 
     # Get buffer and format for presentation
     buffer = path_tracer.denoise_buffer * 255.0

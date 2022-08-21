@@ -25,6 +25,7 @@
 from dataclasses import dataclass
 import multiprocessing
 from typing import Tuple, Optional
+import pickle as pkl
 import numpy as np
 import numpy.typing as npt
 from camera import view_to_projection_matrix
@@ -207,3 +208,7 @@ class PathTracer(object):
     self.buffer[batch[:, 0], batch[:, 1]] = np.minimum(payload_colors, 1.0)
     self.denoise_buffer = self.denoiser.denoise(self.buffer)
     self.current_iteration += 1
+
+  def save_state(self, path):
+    with open(path, 'wb') as f:
+      pkl.dump(self, f)
