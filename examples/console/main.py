@@ -21,7 +21,7 @@
 # SOFTWARE.
 '''Entry point for pytracer
 
-This script creates a pygame window and displays the test scene.
+This script runs the path tracer in console and outputs to a file.
 
   Usage:
 
@@ -46,10 +46,10 @@ def entry_point():
   screen_height = 300
 
   # Initialize Path Tracer
-  tracer_path = 'tmp/tracer.pkl'
-  buffer_path = 'tmp/buffer.npy'
+  tracer_path = "tmp/tracer.pkl"
+  buffer_path = "tmp/buffer.npy"
   if os.path.exists(tracer_path):
-    with open(tracer_path, 'rb') as f:
+    with open(tracer_path, "rb") as f:
       path_tracer = pkl.load(f)
   else:
     path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 100,

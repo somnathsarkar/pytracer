@@ -25,6 +25,7 @@
 from dataclasses import dataclass
 import multiprocessing
 from typing import Tuple, Optional
+import os
 import pickle as pkl
 import numpy as np
 import numpy.typing as npt
@@ -210,5 +211,7 @@ class PathTracer(object):
     self.current_iteration += 1
 
   def save_state(self, path):
-    with open(path, 'wb') as f:
+    tmp_path = path + ".tmp"
+    with open(tmp_path, "wb") as f:
       pkl.dump(self, f)
+    os.replace(tmp_path, path)
