@@ -54,9 +54,9 @@ def entry_point():
   screen = pygame.display.set_mode((screen_width, screen_height))
 
   # Initialize Path Tracer
-  tracer_path = 'tmp/tracer.pkl'
+  tracer_path = "tmp/tracer.pkl"
   if os.path.exists(tracer_path):
-    with open(tracer_path, 'rb') as f:
+    with open(tracer_path, "rb") as f:
       path_tracer = pkl.load(f)
   else:
     path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 100,
@@ -68,6 +68,7 @@ def entry_point():
   # Initialize performance counter
   start_time = time.perf_counter()
   last_time = start_time
+  start_iter = path_tracer.current_iteration
 
   # Main loop
   while running:
@@ -84,14 +85,15 @@ def entry_point():
       # If iterations aren't complete, run the next iteration
       path_tracer.next_iteration()
       # Update performance counter
-      curr = path_tracer.current_iteration
+      curr_iter = path_tracer.current_iteration
+      iters = curr_iter - start_iter
       tot = path_tracer.num_iterations
       last_time = time.perf_counter()
       pygame.display.set_caption(
-          f"Iterations: {curr},"
-          f"Iteration Time: {(last_time-start_time)/curr:.2f}s,"
-          f"It/sec: {curr/(last_time-start_time):.2f},"
-          f"Remaining: {(last_time-start_time)*(tot-curr)/curr:.2f}s,"
+          f"Iterations: {curr_iter},"
+          f"Iteration Time: {(last_time-start_time)/iters:.2f}s,"
+          f"It/sec: {iters/(last_time-start_time):.2f},"
+          f"Remaining: {(last_time-start_time)*(tot-curr_iter)/iters:.2f}s,"
           f"Elapsed: {(last_time-start_time):.2f}s")
       # Save tracer state
       path_tracer.save_state(tracer_path)
