@@ -24,7 +24,7 @@
 
 from dataclasses import dataclass
 import multiprocessing
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 import os
 import pickle as pkl
 import numpy as np
@@ -63,7 +63,7 @@ class PathTracer(object):
                scene: Scene = TEST_SCENE,
                num_processes: int = 1,
                num_iterations: int = 1,
-               num_samples: int = 1,
+               num_samples: Union[int, Tuple[int]] = 1,
                max_depth: int = 2,
                denoiser: Denoiser = Denoiser()):
     self.screen_width = screen_width
@@ -71,7 +71,10 @@ class PathTracer(object):
     self.scene = scene
     self.num_processes = num_processes
     self.num_iterations = num_iterations
-    self.num_samples = num_samples
+    if isinstance(num_samples, tuple):
+      self.num_samples = num_samples
+    else:
+      self.num_samples = tuple([num_samples for _ in range(max_depth)])
     self.max_depth = max_depth
     self.current_iteration = 0
     self.buffer = np.zeros((screen_width, screen_height, 3), dtype=np.float32)
@@ -149,7 +152,7 @@ class PathTracer(object):
             sample_origin = ray.position + intersect_t * ray.direction
             inv_intersect_basis = PathTracer._get_basis_transform(
                 transformed_normal).T
-            for _ in range(self.num_samples):
+            for _ in range(self.num_samples[depth - 1]):
               azimuth = np.random.rand() * np.pi - np.pi / 2.0
               inclination = np.arcsin(np.random.rand() * 2.0 - 1.0)
               random_ray_transform = rotate_mat(
@@ -162,7 +165,7 @@ class PathTracer(object):
                                                instance_i, tri_i)
               payload.color = (payload.color) + (4 * sample_payload.color *
                                                  intersect_albedo /
-                                                 self.num_samples)
+                                                 self.num_samples[depth - 1])
           falloff = max(intersect_t * intersect_t, 1.0)
           payload.color = payload.color / falloff
           found_hit = True

@@ -52,8 +52,8 @@ def entry_point():
     with open(tracer_path, "rb") as f:
       path_tracer = pkl.load(f)
   else:
-    path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 100,
-                             1, 1)
+    path_tracer = PathTracer(screen_width, screen_height, CORNELL_BOX, 8, 200,
+                             (10, 100), 2)
 
   # Initialize performance counter
   start_time = time.perf_counter()
