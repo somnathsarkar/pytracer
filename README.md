@@ -1,6 +1,12 @@
 # pytracer
 
-A python path tracer
+This is a simple path tracer written in pure python for the CPU. It supports the following features:
+1. Monte Carlo path tracing with Importance Sampling
+2. Parallel execution with the `multiprocessing` module
+3. Lambertian diffuse surfaces
+4. Emissive materials
+5. Save path tracer state and resume remaining iterations later
+6. Live execution in `pygame` window or console
 
 ## Environment
 
